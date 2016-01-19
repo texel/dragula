@@ -34,6 +34,8 @@ function dragula (initialContainers, options) {
   if (o.isContainer === void 0) { o.isContainer = never; }
   if (o.copy === void 0) { o.copy = false; }
   if (o.copyFunc === void 0) { o.copyFunc = simpleCopy; }
+  if (o.mirror === void 0) { o.mirror = simpleCopy; }
+  if (o.calculateMirrorPosition === void 0) { o.calculateMirrorPosition = calculateMirrorPosition; }
   if (o.copySortSource === void 0) { o.copySortSource = false; }
   if (o.revertOnSpill === void 0) { o.revertOnSpill = false; }
   if (o.removeOnSpill === void 0) { o.removeOnSpill = false; }
@@ -356,11 +358,10 @@ function dragula (initialContainers, options) {
 
     var clientX = getCoord('clientX', e);
     var clientY = getCoord('clientY', e);
-    var x = clientX - _offsetX;
-    var y = clientY - _offsetY;
+    var mirrorPosition = o.calculateMirrorPosition(_mirror, clientX, clientY, _offsetX, _offsetY)
 
-    _mirror.style.left = x + 'px';
-    _mirror.style.top = y + 'px';
+    _mirror.style.left = mirrorPosition.x + 'px';
+    _mirror.style.top = mirrorPosition.y + 'px';
 
     var item = _copy || _item;
     var elementBehindCursor = getElementBehindPoint(_mirror, clientX, clientY);
@@ -418,10 +419,7 @@ function dragula (initialContainers, options) {
     if (_mirror) {
       return;
     }
-    var rect = _item.getBoundingClientRect();
-    _mirror = _item.cloneNode(true);
-    _mirror.style.width = getRectWidth(rect) + 'px';
-    _mirror.style.height = getRectHeight(rect) + 'px';
+    _mirror = o.mirror(_item);
     classes.rm(_mirror, 'gu-transit');
     classes.add(_mirror, 'gu-mirror');
     o.mirrorContainer.appendChild(_mirror);
@@ -483,7 +481,8 @@ function dragula (initialContainers, options) {
   }
 
   function isCopy (item, container) {
-    return typeof o.copy === 'boolean' ? o.copy : o.copy(item, container);
+    var c = typeof o.copy === 'boolean' ? o.copy : o.copy(item, container);
+    return c
   }
 }
 
@@ -553,7 +552,22 @@ function getElementBehindPoint (point, x, y) {
 
 function never () { return false; }
 function always () { return true; }
-function simpleCopy(el) { return el.cloneNode(true); }
+function simpleCopy (el) { return el.cloneNode(true); }
+function simpleMirror (el) {
+  var rect = _item.getBoundingClientRect();
+  var _mirror = simpleCopy(el)
+
+  _mirror.style.width = getRectWidth(rect) + 'px';
+  _mirror.style.height = getRectHeight(rect) + 'px';
+
+  return mirror;
+}
+function calculateMirrorPosition(mirrorEl, clientX, clientY, offsetX, offsetY) {
+  return {
+    x: clientX - offsetX,
+    y: clientY - offsetY
+  }
+}
 function getRectWidth (rect) { return rect.width || (rect.right - rect.left); }
 function getRectHeight (rect) { return rect.height || (rect.bottom - rect.top); }
 function getParent (el) { return el.parentNode === doc ? null : el.parentNode; }
